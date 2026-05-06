@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description
+   xmlns:darktable="http://darktable.sf.net/"
+   darktable:history_end="2">
+   <darktable:history>
+    <rdf:Seq>
+     <rdf:li
+      darktable:num="0"
+      darktable:operation="exposure"
+      darktable:enabled="1"
+      darktable:modversion="7"
+      darktable:params="00000000000000000000000000004842000080c00000000001000000"
+      darktable:multi_name=""
+      darktable:multi_name_hand_edited="0"
+      darktable:multi_priority="0"/>
+     <rdf:li
+      darktable:num="1"
+      darktable:operation="sigmoid"
+      darktable:enabled="1"
+      darktable:modversion="3"
+      darktable:params="e2a5eb3f000000000000c8426c09793c000000000000c8420000000000000000000000000000000000000000000000000000000000000000"
+      darktable:multi_name=""
+      darktable:multi_name_hand_edited="0"
+      darktable:multi_priority="0"/>
+    </rdf:Seq>
+   </darktable:history>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

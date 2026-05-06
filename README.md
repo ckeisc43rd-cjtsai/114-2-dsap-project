@@ -67,17 +67,83 @@ This project is not only about writing a working implementation. It is also abou
 
 ## Prototype Report
 
-### 目前進度
-<!-- 完成了什麼 -->
+### Progress
+I have finished the first working C++ prototype. At first I only planned to rewrite the XMP patching part, but after rereading `filtrox/src/xmp_gen.py`, I changed the prototype to follow the real flow more closely: JSON config in, darktable module params generated as binary payloads, then XMP output.
 
-### 遇到的困難
-<!-- 遇到什麼問題、如何解決或打算如何解決 -->
+What is working now:
 
-### 下一步計畫
-<!-- 接下來要做什麼 -->
+1. Built an `xmp_core` C++ library and kept the CLI separate from the core logic.
+2. Added `XmpModule`, `XmpAttribute`, `ModulePatch`, and `PatchSummary`, so each darktable module is stored as `module -> ordered attributes`.
+3. Added JSON config input with the same `modules -> params` shape used by `xmp_gen.py`.
+4. Reimplemented module parameter encoding in C++: float / int / array fields are packed into 32-bit binary, then encoded as either hex or `gzNN` + base64.
+5. Supported patching existing darktable operations and inserting missing operations into the history list.
+6. Added tests for text config parsing, JSON config parsing, XMP module extraction, XMP patching, and generated darktable payloads.
+7. Added benchmark modes for JSON-to-XMP generation.
+8. Added a Darktable render driver. Preview renders are low-res first, and the three variations can be rendered in parallel with 2-3 workers. Full-res rendering is only done through an explicit export/save command.
 
-### 與課程的關聯
-<!-- 到目前為止，你的實作中哪些部分與課程內容有關？關係是什麼？ -->
+Main files:
+
+- `src/xmp_patch.hpp` / `src/xmp_patch.cpp`: XMP generation and patching core
+- `src/main.cpp`: CLI, benchmarks, and render driver
+- `tests/xmp_core_tests.cpp`: unit tests
+- `scripts/benchmark_python.py`: Python baseline for JSON-to-XMP generation
+- `scripts/benchmark_render_python.py`: Python/filtrox render baseline
+- `examples/hem_sample.xmp`: real XMP copied from the `_HEM5577_20260303_115540` filtrox session
+- `examples/hem_sample.jpeg`: test image for render experiments
+- `examples/prototype_filter.json`: JSON config in the same style as `xmp_gen.py`
+- `examples/variations/variation_1.json`, `variation_2.json`, `variation_3.json`: three render variation configs
+- `CMakeLists.txt`: build setup
+
+Build and test:
+
+```bash
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Example commands:
+
+```bash
+build/filtrox_xmp examples/hem_sample.xmp examples/prototype_filter.json build/hem_output.xmp
+build/filtrox_xmp --list-modules examples/hem_sample.xmp
+build/filtrox_xmp --benchmark examples/hem_sample.xmp examples/prototype_filter.json 10000
+python3 scripts/benchmark_python.py examples/hem_sample.xmp examples/prototype_filter.json 10000
+build/filtrox_xmp --render-preview examples/hem_sample.jpeg examples/hem_sample.xmp build/render_cpp_preview 3 examples/variations/variation_1.json examples/variations/variation_2.json examples/variations/variation_3.json
+build/filtrox_xmp --render-full examples/hem_sample.jpeg examples/hem_sample.xmp examples/variations/variation_1.json build/export_full.jpg
+python3 scripts/benchmark_render_python.py examples/hem_sample.jpeg examples/hem_sample.xmp build/render_python_preview examples/variations/variation_1.json examples/variations/variation_2.json examples/variations/variation_3.json
+```
+
+Current local results:
+
+- Unit tests: `1/1 tests passed`
+- JSON-to-XMP output patches 10 modules: `colorbalancergb`, `colorequal`, `exposure`, `sigmoid`, `toneequal`, `temperature`, `diffuse`, `hazeremoval`, `vignette`, and `grain`
+- The real `_HEM` XMP is parsed as 14 modules, with each module keeping its ordered darktable attributes.
+- Correctness check: with the same JSON config, C++ output and `xmp_gen.py` output are byte-for-byte identical.
+- JSON-to-XMP benchmark with 10000 iterations: C++ averages about `44.2681 us` per iteration, while the Python baseline averages about `552.201 us` per iteration. In this benchmark, the C++ version is about `12.5x` faster.
+- Render benchmark: `run.sh` will compare the C++ parallel preview renderer with the current sequential Python/filtrox render path when `darktable-cli` is available.
+
+### Difficulties
+The hardest part so far is not writing C++ itself, but figuring out where the real bottleneck actually is. At the beginning, it was tempting to assume that XMP string patching was the main problem. After rereading the original repo, I realized the full pipeline has several possible bottlenecks: JSON parsing, struct packing, zlib/base64 encoding, XMP patching, Darktable startup time, and rendering multiple variations one by one.
+
+I still have not fully confirmed the real problem yet. For now, the prototype is mainly a tool for checking different parts of the Python workflow and collecting more useful timing data.
+
+### Next Steps
+Next I want to use the benchmark results to decide what is actually worth optimizing.
+
+1. Add more real filtrox JSON configs and XMP files, so the benchmarks are not based on only one sample.
+2. Continue tracing the whole Python flow, including AI output handling, JSON-to-XMP generation, preview rendering, full-resolution rendering, file I/O, and repeated Darktable startup, to find where the real bottleneck is.
+
+### Course Connection
+This project connects to data structures and advanced programming in a fairly direct way.
+
+The XMP file is basically a large structured string. The program has to scan it, find the right module, locate attributes, and replace only the correct value without damaging the rest of the metadata. That is a practical string and sequence processing problem.
+
+The module data is stored with `vector` because order matters in darktable history. For future optimization, I plan to add a lookup structure such as `unordered_map<string, range>` so repeated module lookup can be reduced from repeated scans to table lookup.
+
+The encoding part also relates to low-level data representation: 32-bit floats, 32-bit integers, byte order, compression, and base64. This is a good fit for advanced programming because correctness depends on matching the binary layout exactly.
+
+Finally, the render workflow introduces concurrency. Rendering the three preview variations is independent work, so the C++ version can dispatch them to 2-3 workers while keeping full-resolution rendering explicit and separate.
 
 ---
 

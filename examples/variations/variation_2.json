@@ -1,0 +1,42 @@
+{
+  "modules": {
+    "exposure": {
+      "enabled": 1,
+      "modversion": 7,
+      "params": {
+        "mode": 0,
+        "black": 0.015,
+        "exposure": 0.12,
+        "deflicker_percentile": 50.0,
+        "deflicker_target_level": -4.0,
+        "compensate_exposure_bias": 0,
+        "compensate_hilite_pres": 0
+      }
+    },
+    "temperature": {
+      "enabled": 1,
+      "modversion": 4,
+      "params": {
+        "red": 1.04,
+        "green": 1.01,
+        "blue": 0.96,
+        "various": "inf",
+        "preset": 2
+      }
+    },
+    "colorbalancergb": {
+      "enabled": 1,
+      "modversion": 5,
+      "params": {
+        "global_Y": 0.01,
+        "global_C": 0.04,
+        "global_H": 70.0,
+        "saturation_global": 0.02,
+        "vibrance": 0.08,
+        "grey_fulcrum": 0.2,
+        "contrast": 0.05,
+        "saturation_formula": 1
+      }
+    }
+  }
+}
