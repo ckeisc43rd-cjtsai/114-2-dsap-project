@@ -23,7 +23,7 @@
         "chroma_highlights": 0.028,
         "chroma_global": 0.016,
         "chroma_midtones": 0.02,
-        "saturation_global": -0.169,
+        "saturation_global": -0.137,
         "saturation_highlights": 0.04,
         "saturation_midtones": -0.02,
         "saturation_shadows": -0.06,
@@ -33,7 +33,7 @@
         "brilliance_midtones": 0.015,
         "brilliance_shadows": -0.01,
         "mask_grey_fulcrum": 0.2,
-        "vibrance": 0.065,
+        "vibrance": 0.067,
         "grey_fulcrum": 0.2,
         "contrast": 0.06,
         "saturation_formula": 1
@@ -83,7 +83,7 @@
       "params": {
         "mode": 0,
         "black": 0.015,
-        "exposure": 0.15,
+        "exposure": 0.177,
         "deflicker_percentile": 50.0,
         "deflicker_target_level": -4.0,
         "compensate_exposure_bias": 0,
@@ -138,9 +138,9 @@
       "enabled": 1,
       "modversion": 4,
       "params": {
-        "red": 0.979,
+        "red": 1.025,
         "green": 1.02,
-        "blue": 0.945,
+        "blue": 0.994,
         "various": "inf",
         "preset": 2
       }
@@ -182,9 +182,9 @@
       "enabled": 1,
       "modversion": 4,
       "params": {
-        "scale": 94.9,
+        "scale": 102.4,
         "falloff_scale": 120.0,
-        "brightness": -0.209,
+        "brightness": -0.1,
         "saturation": -0.08,
         "center": [
           0.06,

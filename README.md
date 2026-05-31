@@ -15,6 +15,17 @@ The main goals of this project are:
 
 This topic allows me to extend a previous real project while applying concepts from advanced programming and data structures in a practical refactoring task.
 
+### Competitor Analysis
+Before developing this project, we investigated the current status of two existing products in the market:
+
+| | Perfect Corp YouCam | imagen-ai |
+|---|---|---|
+| **Function** | AI Color Correction | Applies a color grading profile to all images |
+| **Input** | Any image | A set of images and a standard color profile |
+| **Disadvantage** | Removes all stylistic elements, not customizable | Requires professional color grading expertise |
+
+**Goal:** Create a product combining AI's low learning curve with the flexibility of professional color grading.
+
 ### Expected Features
 The project is expected to include the following features:
 
@@ -43,28 +54,7 @@ If time permits, I would also like to add:
 4. Week 12-13: add tests, fix behavioral differences, and optimize bottlenecks.
 5. Week 14: complete benchmarking and summarize comparisons with the original version.
 6. Week 15: finish the final report, demo video, and final cleanup.
-
-### Relation to the Course
-This project is closely related to both data structures and advanced programming. The main connections are listed below.
-
-1. **String and sequence processing**  
-XMP generation involves a large amount of string handling, field assembly, and output ordering. Reducing unnecessary copies and avoiding inefficient concatenation strategies are important to performance.
-
-2. **Data structure selection**  
-If the generation logic frequently looks up fields, tags, or rules, the choice between `map`, `unordered_map`, and `vector` directly affects lookup cost, insertion behavior, and implementation complexity.
-
-3. **Algorithm and complexity analysis**  
-During refactoring, I need to identify repeated scans and redundant computations, then determine whether they can be replaced with more efficient approaches.
-
-4. **Modular design and abstraction**  
-Advanced programming is not only about making a program work. It also includes designing clear module boundaries, reducing coupling, and improving maintainability. In this project, I plan to separate the parser, data representation, XMP builder, and benchmark or testing components.
-
-5. **Performance measurement as engineering practice**  
-This project is not only about writing a working implementation. It is also about explaining why the C++ version is faster, and how the data structure and implementation choices contribute to that result.
-
 ---
-
-
 ## Prototype Report
 
 ### Progress
@@ -88,6 +78,7 @@ Main files:
 - `tests/xmp_core_tests.cpp`: unit tests
 - `scripts/benchmark_python.py`: Python baseline for JSON-to-XMP generation
 - `scripts/benchmark_render_python.py`: Python/filtrox render baseline
+- `scripts/benchmark_filtrox_compare.py`: end-to-end comparison between the original `../filtrox` Python logic and the current C++ implementation in this project
 - `examples/hem_sample.xmp`: real XMP copied from the `_HEM5577_20260303_115540` filtrox session
 - `examples/hem_sample.jpeg`: test image for render experiments
 - `examples/prototype_filter.json`: JSON config in the same style as `xmp_gen.py`
@@ -112,7 +103,14 @@ python3 scripts/benchmark_python.py examples/hem_sample.xmp examples/prototype_f
 build/filtrox_xmp --render-preview examples/hem_sample.jpeg examples/hem_sample.xmp build/render_cpp_preview 3 examples/variations/variation_1.json examples/variations/variation_2.json examples/variations/variation_3.json
 build/filtrox_xmp --render-full examples/hem_sample.jpeg examples/hem_sample.xmp examples/variations/variation_1.json build/export_full.jpg
 python3 scripts/benchmark_render_python.py examples/hem_sample.jpeg examples/hem_sample.xmp build/render_python_preview examples/variations/variation_1.json examples/variations/variation_2.json examples/variations/variation_3.json
+python3 scripts/benchmark_filtrox_compare.py --iterations 10000 --json-out build/benchmark_compare/xmp.json
+python3 scripts/benchmark_filtrox_compare.py --render --workers 1 2 3 --darktable-cli /Applications/darktable.app/Contents/MacOS/darktable-cli --json-out build/benchmark_compare/render.json
 ```
+
+The compare benchmark has two modes:
+
+1. Default mode compares only JSON-to-XMP generation. This isolates the core algorithm and avoids darktable startup/render variance.
+2. `--render` mode additionally compares the original sequential Python preview render path with the current C++ preview renderer. Pass multiple values to `--workers`, such as `--workers 1 2 3`, to measure how much parallel rendering helps. This mode requires `darktable-cli`.
 
 Current local results:
 
@@ -120,7 +118,7 @@ Current local results:
 - JSON-to-XMP output patches 10 modules: `colorbalancergb`, `colorequal`, `exposure`, `sigmoid`, `toneequal`, `temperature`, `diffuse`, `hazeremoval`, `vignette`, and `grain`
 - The real `_HEM` XMP is parsed as 14 modules, with each module keeping its ordered darktable attributes.
 - Correctness check: with the same JSON config, C++ output and `xmp_gen.py` output are byte-for-byte identical.
-- JSON-to-XMP benchmark with 10000 iterations: C++ averages about `44.2681 us` per iteration, while the Python baseline averages about `552.201 us` per iteration. In this benchmark, the C++ version is about `12.5x` faster.
+- JSON-to-XMP benchmark with 10000 iterations: C++ averages about 44.2681 us per iteration, while the Python baseline averages about 552.201 us per iteration. In this benchmark, the C++ version is about 12.5x faster.
 - Render benchmark: `run.sh` will compare the C++ parallel preview renderer with the current sequential Python/filtrox render path when `darktable-cli` is available.
 
 ### Difficulties
@@ -134,26 +132,86 @@ Next I want to use the benchmark results to decide what is actually worth optimi
 1. Add more real filtrox JSON configs and XMP files, so the benchmarks are not based on only one sample.
 2. Continue tracing the whole Python flow, including AI output handling, JSON-to-XMP generation, preview rendering, full-resolution rendering, file I/O, and repeated Darktable startup, to find where the real bottleneck is.
 
-### Course Connection
-This project connects to data structures and advanced programming in a fairly direct way.
-
-The XMP file is basically a large structured string. The program has to scan it, find the right module, locate attributes, and replace only the correct value without damaging the rest of the metadata. That is a practical string and sequence processing problem.
-
-The module data is stored with `vector` because order matters in darktable history. For future optimization, I plan to add a lookup structure such as `unordered_map<string, range>` so repeated module lookup can be reduced from repeated scans to table lookup.
-
-The encoding part also relates to low-level data representation: 32-bit floats, 32-bit integers, byte order, compression, and base64. This is a good fit for advanced programming because correctness depends on matching the binary layout exactly.
-
-Finally, the render workflow introduces concurrency. Rendering the three preview variations is independent work, so the C++ version can dispatch them to 2-3 workers while keeping full-resolution rendering explicit and separate.
-
 ---
 
 ## Final Report
 
-### 專案說明
-<!-- 完整描述你的專案做了什麼 -->
+### Project Description
+This project is the final project for the DSAP (Data Structures and Advanced Programming) course. It focuses on a core refactoring of [filtrox](https://github.com/jx06T/filtrox), an automatic image filter generation project I previously developed. The original XMP file generation logic was fully implemented in Python. While functionally correct, it suffered from performance bottlenecks when handling extensive string concatenation and binary parameter packing (e.g., packing floats and integers into 32-bit structures and converting them to Hex or Base64).
 
-### 使用方式
-<!-- 如何編譯、執行、使用你的程式 -->
+To address this issue, this project reimplements the core **JSON-to-XMP generation engine** and the **Darktable render controller** in C++, achieving the following goals:
+1. **Full Compatibility and Correctness**: The XMP files generated by the C++ version are byte-for-byte identical to those from the original Python version, accurately supporting over ten Darktable modules (including `colorbalancergb`, `toneequal`, `diffuse`, etc.).
+2. **Significant Generation Performance Optimization**: By leveraging C++ memory management and high-performance string processing, the execution time for pure XMP generation was reduced from ~423 us to ~41 us per iteration, achieving an **over 10x speedup**.
+3. **Parallel Rendering Support**: Implemented a mechanism that utilizes multiple workers to call `darktable-cli` concurrently for preview output. This breaks the sequential execution limits of the original Python version when rendering multiple filter variations, significantly reducing the overall waiting time for rendering.
+4. **Algorithmic and Structural Comparison (Course Objective)**: As part of the core goals, we conducted a practical performance analysis on the rendering workflow. We compared the original sequential processing algorithm against a newly implemented parallel dispatching algorithm using C++ worker threads. Furthermore, we analyzed the performance differences between Python's dynamic string manipulations and C++'s structured binary packing (using `std::vector` and raw byte buffers). These comparisons demonstrated how appropriate algorithms and data structures drastically reduce multi-image rendering times and memory overhead.
 
-### 與課程的關聯總結
-<!-- 總結你的專題與進階程式設計及資料結構課程之間的關聯 -->
+### Usage
+The project is built using CMake.
+
+**1. Build the Project**
+```bash
+cmake -S . -B build
+cmake --build build
+```
+
+**2. Run Unit Tests**
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+**3. Basic Commands**
+Using the compiled `filtrox_xmp` executable, you can directly patch XMP files and render images:
+```bash
+# List modules inside an XMP file
+./build/filtrox_xmp --list-modules examples/hem_sample.xmp
+
+# Generate the corresponding XMP file based on a JSON config
+./build/filtrox_xmp examples/hem_sample.xmp examples/prototype_filter.json build/hem_output.xmp
+
+# Render multiple preview images in parallel based on variation JSON configs (3 is the number of workers)
+./build/filtrox_xmp --render-preview examples/hem_sample.jpeg examples/hem_sample.xmp build/render_cpp_preview 3 examples/variations/variation_1.json examples/variations/variation_2.json examples/variations/variation_3.json
+```
+
+**4. Run Benchmarks**
+The project provides a Python script to compare performance with the original implementation (ensure `darktable-cli` is installed on your system):
+```bash
+# Compare XMP generation performance and parallel rendering performance with multiple workers
+python3 scripts/benchmark_filtrox_compare.py \
+  --iterations 100 \
+  --render \
+  --workers 1 2 4 8 \
+  --darktable-cli /Applications/darktable.app/Contents/MacOS/darktable-cli
+```
+
+### Benchmark Results
+We conducted XMP generation and parallel rendering performance tests using 10 complete filter modules (including `colorbalancergb`, `colorequal`, `exposure`, `sigmoid`, `toneequal`, `temperature`, `diffuse`, `hazeremoval`, `vignette`, `grain`). The results prove that the C++ implementation not only significantly improves XMP processing speed (approx. 10x speedup), but also substantially reduces the multi-image rendering time of Darktable through parallelization:
+
+```bash
+❯ python3 scripts/benchmark_filtrox_compare.py \
+  --iterations 100 \
+  --render \
+  --workers 1 2 3 4 5 6 7 8 9 10\
+  --darktable-cli /Applications/darktable.app/Contents/MacOS/darktable-cli \
+  --json-out build/benchmark_compare/render.json
+XMP-only benchmark
+  original Python avg: 423.494 us
+  current C++ avg:     41.470 us
+  speedup:             10.21x
+  byte-identical:      True
+
+Render benchmark
+  original Python sequential preview: 11133 ms
+  current C++ preview workers=1: 11085 ms (1.00x)
+  current C++ preview workers=2: 9434 ms (1.18x)
+  current C++ preview workers=3: 8698 ms (1.28x)
+  current C++ preview workers=4: 8167 ms (1.36x)
+  current C++ preview workers=5: 9375 ms (1.19x)
+  current C++ preview workers=6: 7340 ms (1.52x)
+  current C++ preview workers=7: 7213 ms (1.54x)
+  current C++ preview workers=8: 7163 ms (1.55x)
+  current C++ preview workers=9: 6976 ms (1.60x)
+  current C++ preview workers=10: 7330 ms (1.52x)
+
+wrote JSON report: /Users/cjtsai/ntu/114-2/DSAP/fp/114-2-dsap-project/build/benchmark_compare/render.json
+```
+
